@@ -48,7 +48,8 @@
 | `PROXY_IP` | 反代IP | `sjc.o00o.ooo:443` | `proxy.com:443` |
 | `SOCKS5_URI` | SOCKS5 | `socks5://123:123@54.193.123.84:1080` | `socks5://user:pass@host:port` |
 | `GLOBAL_SOCKS5` | 是否启用全局SOCKS5 | `false` | `true` / `false` |
-（当socks5与proxyip同时设置时，则优先使用socks5）
+
+（ps.当socks5与proxyip同时设置时，则优先使用socks5）
 
 ### 多IP配置示例
 
