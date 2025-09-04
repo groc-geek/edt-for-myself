@@ -40,7 +40,7 @@ class Config {
     } else {
       // 处理普通 socks5 参数  SOCKS5 配置 (支持 socks5://user:pass@host:port 格式)
       const socks5Param = url?.searchParams.get('socks5');
-      socks5URI = socks5Param || env?.SOCKS5_URI || 'socks5://123:123@54.193.123.84:1080';
+      socks5URI = socks5Param || env?.SOCKS5_URI || '';  //例：socks5://123:123@54.193.123.84:1080
       globalSocks5 = String(env?.GLOBAL_SOCKS5 || 'false').toLowerCase() === 'true';
     }
     
