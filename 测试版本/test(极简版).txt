@@ -1,12 +1,9 @@
-import{connect}from'cloudflare:sockets';
-const U='ikun',I='aaa6b096-1165-4bbe-935c-99f4ec902d02',P='sjc.o00o.ooo:443',N='IKUN-Vless',
-B=['developers.cloudflare.com','ip.sb','www.visa.cn','ikun.glimmer.cf.090227.xyz'],
-IB=new Uint8Array(I.replace(/-/g,'').match(/.{2}/g).map(x=>parseInt(x,16))),
-td=new TextDecoder(),te=new TextEncoder();
-
-const b64u=s=>{if(!s) return new Uint8Array();s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
-const parse=d=>{d=new Uint8Array(d);const o=18+(d[17]||0)+1,pt=(d[o]<<8)|d[o+1];let p=o+3,t=d[o+2],h;if(t===1)h=`${d[p++]}.${d[p++]}.${d[p++]}.${d[p++]}`;else if(t===2){const l=d[p++];h=td.decode(d.subarray(p,p+l));p+=l}else{h=Array.from({length:8},(_,i)=>((d[p+2*i]<<8)|d[p+2*i+1]).toString(16)).join(':');p+=16}return{h,pt,data:d.slice(p)}};
-
-const conn=async(h,pt)=>{try{const s=await connect({hostname:h,port:pt});await s.opened;return s}catch{const[ph,pp]=P.split(':');const s=await connect({hostname:ph,port:+pp||pt});await s.opened;return s}};
-
-export default{async fetch(r){const host=r.headers.get('Host'),u=new URL(r.url);if(r.headers.get('Upgrade')==='websocket'){const pd=b64u(r.headers.get('sec-websocket-protocol')||'');if(pd.length<18||!pd.slice(1,17).every((b,i)=>b===IB[i]))return new Response('',{status:403});const{h,pt,data}=parse(pd.buffer),s=await conn(h,pt),[c,sv]=new WebSocketPair();sv.accept();const w=s.writable.getWriter();try{sv.send(new Uint8Array([0,0]));if(data&&data.length)await w.write(data)}catch{}sv.addEventListener('message',async e=>{try{await w.write(typeof e.data==='string'?te.encode(e.data):new Uint8Array(e.data))}catch{}});try{s.readable.pipeTo(new WritableStream({write:chunk=>sv.send(chunk)}))}catch{}return new Response(null,{status:101,webSocket:c})}if(u.pathname===`/${U}/vless`)return new Response([...B,`${host}:443`].map(x=>{const[a,pt=443]=x.split(':');return`vless://${I}@${a}:${pt}?encryption=none&security=tls&type=ws&host=${host}&sni=${host}&path=%2F%3Fed%3D2560#${N}`}).join('\n'));return new Response('')}}
+import{connect as C}from'cloudflare:sockets'
+const U='aaa6b096-1165-4bbe-935c-99f4ec902d02',P='ikun',N='IKUN-Vless',X='sjc.o00o.ooo:443',B=['developers.cloudflare.com','ip.sb','www.visa.cn'],I=new Uint8Array(U.replace(/-/g,'').match(/.{2}/g).map(x=>parseInt(x,16)))
+const b=s=>{if(!s)return new Uint8Array();s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
+const q=g=>{const d=new Uint8Array(g),o=18+(d[17]||0)+1,p=(d[o]<<8)|d[o+1];let i=o+3,t=d[o+2],h;if(t===1)h=`${d[i++]}.${d[i++]}.${d[i++]}.${d[i++]}`;else if(t===2){const l=d[i++];h=new TextDecoder().decode(d.subarray(i,i+l));i+=l}else{h=Array.from({length:8},(_,j)=>((d[i+2*j]<<8)|d[i+2*j+1]).toString(16)).join(':');i+=16}return{h,p,d:d.slice(i)}}
+const T=async(h,p,m)=>{let s;try{s=C({hostname:h,port:p});await Promise.race([s.opened,new Promise((_,r)=>setTimeout(()=>r(1),m))]);return s}catch(e){try{s&&s.close()}catch{}return null}}
+const Nn=async(h,p)=>{let s=await T(h,p,1200);if(s)return s;const[a,b]=X.split(':');s=await T(a,+b||p,2500);if(s)return s;throw 0}
+export default{async fetch(R){try{const u=new URL(R.url),H=R.headers.get('Host')||'x';if(R.headers.get('Upgrade')==='websocket'){const D=b(R.headers.get('sec-websocket-protocol')||'');if(D.length<18||!D.slice(1,17).every((v,i)=>v===I[i]))return new Response('',{status:403});const{h, p, d}=q(D.buffer);let s;try{s=await Nn(h,p)}catch{return new Response('',{status:502})}const[w,sv]=new WebSocketPair();sv.accept();try{const ww=s.writable.getWriter();sv.send(new Uint8Array([0,0]));if(d&&d.length)await ww.write(d);sv.addEventListener('message',async e=>{try{if(typeof e.data==='string')await ww.write(new TextEncoder().encode(e.data));else await ww.write(new Uint8Array(e.data))}catch{}});s.readable.pipeTo(new WritableStream({write:c=>sv.send(c)})).catch(()=>{})}catch{try{s.close()}catch{}return new Response('',{status:500})}return new Response(null,{status:101,webSocket:w})}
+if(u.pathname===`/${P}/vless`){return new Response([...B,`${H}:443`].map(x=>{const[a,p=443]=x.split(':');return`vless://${U}@${a}:${p}?encryption=none&security=tls&type=ws&host=${H}&sni=${H}&path=%2F%3Fed%3D2560#${N}`}).join('\n'))}
+return new Response('',{status:404})}catch{return new Response('',{status:500})}}}
