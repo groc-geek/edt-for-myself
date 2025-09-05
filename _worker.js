@@ -1,28 +1,4 @@
 import { connect } from 'cloudflare:sockets';
-
-/*
-使用说明（中文）—— 请完整阅读
-
-环境变量（在 Cloudflare Worker 面板绑定）：
-- USERID / userid         : 订阅用的用户 ID（路由 /<USERID>）
-- UUID   / uuid           : VLESS 用户 UUID（用于校验）
-- URL    / url            : 仅用于替代原代码中 example.com 的回退目标（非 websocket 回退），如果未设置则回退到 example.com
-- BESTIPS / bestips       : 多个 bestip，支持换行或逗号分隔；每个 bestip 会生成一条 vless 节点（顺序保留）
-- PROXYIP / proxyip       : 可选的回退 proxyip，格式 host:port
-- SOCKS5 / socks5         : 可选的 socks5 设置，支持多种格式：
-                            - user:pass@host:port
-                            - socks5://user:pass@host:port
-                            - socks://dXNlcjpwYXNzd29yZA==@host:port （如果 user 部分为 base64，会尝试解码）
-- GSOCKS5 / gsocks5       : 全局 socks5 请求开关（"true"/"false"）。**仅在显式请求时才会尝试开启**（env / query / path / 代码改动）。
-                            若请求开启全局 socks5，但无可用 socks5 配置或 socks5 连接失败，脚本会自动关闭全局 socks（降级为普通顺序：直连 -> socks5 回退 -> proxyip 回退）。
-
-路由与行为要点：
-- **仅当访问** https://<部署域名>/<USERID> **返回订阅信息**（纯文本：每行一条 vless:// 链接；BESTIPS 中每个 bestip 一行，且始终包含部署域名作为一条节点）。
-- /<USERID>/vless 返回相同的纯文本节点列表（兼容）。
-- 非 websocket 且非上述两条路径：回退到 env.URL（若未设置则回退到 example.com）。
-- WebSocket 主逻辑（UUID 校验、VLESS 头解析、DNS over DoH、连接顺序）保持原样：默认顺序 直连 -> socks5 回退 -> proxyip 回退；若显式请求全局 socks5，会优先尝试 socks5，失败时自动降级。
-*/
-
 /* ===================== 实现代码 ===================== */
 
 export default {
