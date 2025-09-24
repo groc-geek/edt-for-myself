@@ -14,7 +14,38 @@
 
 import{connect}from'cloudflare:sockets';
 const I='aaa6b096-1165-4bbe-935c-99f4ec902d02';
+const GS5=false; // true=全局SOCKS5, false=直连优先，失败回退SOCKS5
 const IB=new Uint8Array(I.replace(/-/g,'').match(/.{2}/g).map(x=>parseInt(x,16)));
+
+const socks5Connect=async(s5,th,tp)=>{
+    const s=connect({hostname:s5.host,port:s5.port});
+    await s.opened;
+    const w=s.writable.getWriter(),r=s.readable.getReader();
+    try{
+        if(s5.user||s5.pass){
+            await w.write(new Uint8Array([5,2,0,2]));
+            let m=(await r.read()).value;
+            if(m&&m[1]===2){
+                const u=new TextEncoder().encode(s5.user||''),p=new TextEncoder().encode(s5.pass||'');
+                await w.write(new Uint8Array([1,u.length,...u,p.length,...p]));
+                await r.read();
+            }
+        }else{
+            await w.write(new Uint8Array([5,1,0]));
+            await r.read();
+        }
+        const db=new TextEncoder().encode(th);
+        await w.write(new Uint8Array([5,1,0,3,db.length,...db,tp>>8,tp&255]));
+        await r.read();
+        w.releaseLock();
+        r.releaseLock();
+        return s;
+    }catch(e){
+        try{w.releaseLock();r.releaseLock()}catch{}
+        try{s.close()}catch{}
+        throw e;
+    }
+};
 
 export default{
     async fetch(r){
@@ -71,7 +102,7 @@ export default{
                         const resp=await fetch('https://1.1.1.1/dns-query',{
                             method:'POST',
                             headers:{'content-type':'application/dns-message'},
-                            body:u8.slice(2) 
+                            body:u8.slice(2)
                         });
                         if(ws.readyState===1){
                             const result=new Uint8Array(await resp.arrayBuffer());
@@ -106,7 +137,7 @@ export default{
                 if(c===2&&pt===53){
                     dns=1;
                     try{
-                        const resp=await fetch('https://8.8.8.8',{
+                        const resp=await fetch('https://1.1.1.1/dns-query',{
                             method:'POST',
                             headers:{'content-type':'application/dns-message'},
                             body:pl
@@ -121,27 +152,19 @@ export default{
                 if(c!==1)return;
                 
                 try{
-                    const s=connect({hostname:s5.host,port:s5.port});
-                    await s.opened;
-                    const w=s.writable.getWriter(),rd=s.readable.getReader();
-                    if(s5.user||s5.pass){
-                        await w.write(new Uint8Array([5,2,0,2]));
-                        let m=(await rd.read()).value;
-                        if(m&&m[1]===2){
-                            const u=new TextEncoder().encode(s5.user||''),p=new TextEncoder().encode(s5.pass||'');
-                            await w.write(new Uint8Array([1,u.length,...u,p.length,...p]));
-                            await rd.read();
-                        }
+                    // 根据GS5变量选择连接逻辑
+                    if(GS5){
+                        // 全局SOCKS5模式：直接走SOCKS5
+                        rm=await socks5Connect(s5,ad,pt);
                     }else{
-                        await w.write(new Uint8Array([5,1,0]));
-                        await rd.read();
+                        // 回退模式：先直连，失败后走SOCKS5
+                        try{
+                            rm=connect({hostname:ad,port:pt});
+                            await rm.opened;
+                        }catch{
+                            rm=await socks5Connect(s5,ad,pt);
+                        }
                     }
-                    const db=new TextEncoder().encode(ad);
-                    await w.write(new Uint8Array([5,1,0,3,db.length,...db,pt>>8,pt&255]));
-                    await rd.read();
-                    w.releaseLock();
-                    rd.releaseLock();
-                    rm=s;
                     
                     const wr=rm.writable.getWriter();
                     await wr.write(pl);
@@ -153,12 +176,15 @@ export default{
                             const c=new Uint8Array((sent?0:2)+ch.length);
                             if(!sent){c.set(h,0);c.set(ch,2);sent=1}else c.set(ch,0);
                             ws.send(c);
-                        }
+                        },
+                        close:()=>ws.readyState===1&&ws.close(),
+                        abort:()=>ws.readyState===1&&ws.close()
                     })).catch(()=>{});
-                }catch{}
+                }catch{
+                    ws.close(1011,'Connect failed');
+                }
             }
         })).catch(()=>{});
-        
         return new Response(null,{status:101,webSocket:cl});
     }
 };
