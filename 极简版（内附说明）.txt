@@ -1,3 +1,4 @@
+//此版本牺牲了一定的兼容性，换性能。
 // 常量介绍  U=订阅路径，I=uuid，P=proxyip（反代cf），N=节点名字，S5=socks5（类似proxyip的作用），G=全局socks（所有流量转发）B=优选ip
 // 连接逻辑：直连 -> socks5 -> proxyip
 // 订阅链接：https://你的域名/U/vless
